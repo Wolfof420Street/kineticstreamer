@@ -1,18 +1,19 @@
 // IStreamingService.aidl
 package com.kevmo314.kineticstreamer;
 
-parcelable StreamingConfiguration;
+import android.view.Surface;
+import com.kevmo314.kineticstreamer.StreamingConfiguration;
 
 interface IStreamingService {
-    void setPreviewSurface(in android.view.Surface surface);
+    void setPreviewSurface(in Surface surface);
 
-    void startStreaming(in StreamingConfiguration configuration);
+    void startStreaming(in StreamingConfiguration config);
 
     void stopStreaming();
 
     boolean isStreaming();
 
-    @nullable String getActiveCameraId();
+    String getActiveCameraId();
 
     void setActiveCameraId(String cameraId);
 }

@@ -10,17 +10,17 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlin.math.ln
 import kotlin.math.pow
 
 enum class SupportedVideoCodec(val mimeType: String) {
-    H264(MediaFormat.MIMETYPE_VIDEO_AVC),
-    H265(MediaFormat.MIMETYPE_VIDEO_HEVC),
-    VP8(MediaFormat.MIMETYPE_VIDEO_VP8),
-    VP9(MediaFormat.MIMETYPE_VIDEO_VP9),
-    @RequiresApi(Build.VERSION_CODES.Q)
-    AV1(MediaFormat.MIMETYPE_VIDEO_AV1);
+    H264("video/avc"),
+    H265("video/hevc"),
+    VP8("video/x-vnd.on2.vp8"),
+    VP9("video/x-vnd.on2.vp9"),
+    AV1("video/av01");
 }
 
 enum class SupportedAudioCodec(val mimeType: String) {
@@ -76,7 +76,7 @@ class Settings(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { it[_codec] = codec.name }
     }
 
-    val bitrate = dataStore.data.map { it[_bitrate] }
+    val bitrate = dataStore.data.map { it[_bitrate] ?: 2_000_000 }
 
     suspend fun setBitrate(bitrate: Int) {
         dataStore.edit { it[_bitrate] = bitrate }
@@ -111,11 +111,24 @@ class Settings(private val dataStore: DataStore<Preferences>) {
     }
 
     suspend fun getStreamingConfiguration(): StreamingConfiguration {
-//        val codec = codec.first().mimeType
+        val currentResolution = resolution.first()
+        val currentBitrate = bitrate.first()
         return StreamingConfiguration(
-            MediaFormat.MIMETYPE_VIDEO_VP8,
-            MediaFormat.MIMETYPE_AUDIO_OPUS,
-            MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM
+            url = "rtsp://localhost:8554/stream",
+            width = currentResolution.width,
+            height = currentResolution.height,
+            frameRate = 30,
+            bitrate = currentBitrate
+        )
+    }
+
+    fun createStreamingConfiguration(url: String): StreamingConfiguration {
+        return StreamingConfiguration(
+            url = url,
+            width = 1280,
+            height = 720,
+            frameRate = 30,
+            bitrate = 2_000_000 // 2 Mbps
         )
     }
 }
