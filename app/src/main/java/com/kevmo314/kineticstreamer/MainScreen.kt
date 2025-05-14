@@ -118,6 +118,7 @@ fun MainScreen(
             if (stub != null) {
                 val isStreaming = remember(stub) { mutableStateOf(stub.isStreaming) }
                 val activeCameraId = remember { mutableStateOf(stub.activeCameraId) }
+                val isStreamingOperationInProgress = remember { mutableStateOf(false) }
 
                 // Update activeCameraId when dialog is opened
                 LaunchedEffect(cameraSelectorDialogOpen.value) {
@@ -183,11 +184,21 @@ fun MainScreen(
                     }
                     Button(
                         onClick = {
-                            if (isStreaming.value) {
-                                stub.stopStreaming()
-                            } else {
-                                runBlocking {
-                                    stub.startStreaming(settings.getStreamingConfiguration())
+                            if (!isStreamingOperationInProgress.value) {
+                                isStreamingOperationInProgress.value = true
+                                if (isStreaming.value) {
+                                    stub.stopStreaming()
+                                    isStreamingOperationInProgress.value = false
+                                } else {
+                                    runBlocking {
+                                        try {
+                                            stub.startStreaming(settings.getStreamingConfiguration())
+                                        } catch (e: Exception) {
+                                            // Handle error silently since we're just preventing UI issues
+                                        } finally {
+                                            isStreamingOperationInProgress.value = false
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -197,7 +208,14 @@ fun MainScreen(
                         } else {
                             CircleShape
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isStreamingOperationInProgress.value) {
+                                Color.Gray
+                            } else {
+                                Color.Red
+                            }
+                        ),
+                        enabled = !isStreamingOperationInProgress.value
                     ) {
                     }
                     IconButton(
