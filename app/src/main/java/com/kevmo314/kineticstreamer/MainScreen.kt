@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -116,6 +117,14 @@ fun MainScreen(
 
             if (stub != null) {
                 val isStreaming = remember(stub) { mutableStateOf(stub.isStreaming) }
+                val activeCameraId = remember { mutableStateOf(stub.activeCameraId) }
+
+                // Update activeCameraId when dialog is opened
+                LaunchedEffect(cameraSelectorDialogOpen.value) {
+                    if (cameraSelectorDialogOpen.value) {
+                        activeCameraId.value = stub.activeCameraId
+                    }
+                }
 
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),
@@ -211,9 +220,12 @@ fun MainScreen(
                         onDismissRequest = {
                             cameraSelectorDialogOpen.value = false
                         },
-                        selectedCameraId = stub.activeCameraId,
-                        onCameraSelected = {
-                            stub.activeCameraId = it
+                        selectedCameraId = activeCameraId.value ?: "",
+                        onCameraSelected = { newCameraId ->
+                            stub.activeCameraId = newCameraId
+                            activeCameraId.value = newCameraId
+                            // Close dialog after selection
+                            cameraSelectorDialogOpen.value = false
                         },
                     )
                 }
